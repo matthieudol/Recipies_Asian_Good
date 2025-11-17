@@ -133,11 +133,25 @@ class CulinaryRAG:
                 "Aucune recette indexée pour le moment. Merci d'importer un PDF."
             )
 
+        # Récupérer les documents sources pour extraire le nom du fichier
+        retriever = self._build_retriever(k=k)
+        source_docs = retriever.get_relevant_documents(question)
+        
+        # Extraire le nom du fichier PDF depuis les métadonnées
+        pdf_filename = "document inconnu"
+        if source_docs:
+            source_path = source_docs[0].metadata.get("source", "")
+            if source_path:
+                pdf_filename = Path(source_path).name
+        
+        # Créer un prompt personnalisé avec le nom du fichier
+        custom_prompt = utils.chef_prompt_template_with_filename(pdf_filename)
+        
         qa_chain = RetrievalQA.from_chain_type(
             llm=self.llm,
             chain_type="stuff",
-            retriever=self._build_retriever(k=k),
-            chain_type_kwargs={"prompt": self.prompt},
+            retriever=retriever,
+            chain_type_kwargs={"prompt": custom_prompt},
             return_source_documents=True,
         )
         raw_response: Dict[str, Any] = qa_chain.invoke({"query": question})

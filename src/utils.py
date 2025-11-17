@@ -25,9 +25,13 @@ def sanitize_filename(filename: str) -> str:
 
 
 def chef_prompt_template() -> PromptTemplate:
-    """Prompt template used by the RetrievalQA chain."""
+    """Prompt template used by the RetrievalQA chain (version par défaut)."""
+    return chef_prompt_template_with_filename("document")
+
+def chef_prompt_template_with_filename(pdf_filename: str) -> PromptTemplate:
+    """Prompt template with explicit PDF filename to avoid LLM inventing names."""
     template = textwrap.dedent(
-        """
+        f"""
         Tu es un chef étoilé Michelin spécialisé dans les recettes chinoises faciles.
         
         RÈGLES STRICTES:
@@ -36,15 +40,18 @@ def chef_prompt_template() -> PromptTemplate:
         - Si le contexte ne contient pas d'information sur la question, dis clairement: "Je n'ai pas trouvé cette information dans les recettes disponibles"
         - Ne suggère PAS de consulter des sites web externes ou des catégories non mentionnées
         
+        IMPORTANT: Le document analysé s'appelle exactement: "{pdf_filename}"
+        Ne change PAS ce nom. Utilise-le tel quel dans ta réponse.
+        
         Contexte disponible:
-        {context}
+        {{context}}
 
         Question de l'utilisateur:
-        {question}
+        {{question}}
 
         Réponds en structurant ta réponse ainsi:
         
-        Commence TOUJOURS par indiquer: "📄 Document analysé: [nom du fichier PDF source]"
+        Commence TOUJOURS par indiquer: "📄 Document analysé: {pdf_filename}"
         
         Si tu trouves une recette DIRECTE dans le contexte qui correspond à la question:
         - Commence par: "✅ Recette directe trouvée: [nom de la recette]"
