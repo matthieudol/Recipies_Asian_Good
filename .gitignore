@@ -3,6 +3,8 @@ __pycache__/
 .env
 .venv/
 vectorstore/
+data/
+.streamlit/
 *.log
 *.sqlite*
 
