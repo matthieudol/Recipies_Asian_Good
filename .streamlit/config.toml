@@ -1,0 +1,4 @@
+[server]
+# Force Python 3.11 pour compatibilité avec tokenizers (évite erreur PyO3 avec Python 3.13)
+pythonVersion = "3.11"
+
