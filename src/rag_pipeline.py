@@ -14,7 +14,7 @@ try:
 except ImportError:
     # Fallback si langchain-huggingface n'est pas disponible
     HuggingFaceEndpoint = None
-from langchain_community.vectorstores import Chroma
+from langchain_community.vectorstores import InMemoryVectorStore
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 
 from . import utils
@@ -45,11 +45,8 @@ class CulinaryRAG:
         self.hf_model = os.getenv("HUGGINGFACE_MODEL", "mistralai/Mistral-7B-Instruct-v0.2")
 
         self.embeddings = HuggingFaceEmbeddings(model_name=self.embed_model)
-        self.vectorstore = Chroma(
-            collection_name=self.collection_name,
-            persist_directory=str(utils.VECTOR_DIR),
-            embedding_function=self.embeddings,
-        )
+        self.vectorstore = InMemoryVectorStore(embedding=self.embeddings)
+        self.doc_count = 0
         
         # Choix du LLM : cloud (HuggingFace) ou local (Ollama)
         if self.use_cloud_llm and self.hf_api_key and HuggingFaceEndpoint:
@@ -99,7 +96,7 @@ class CulinaryRAG:
             return 0
 
         self.vectorstore.add_documents(chunks)
-        self.vectorstore.persist()
+        self.doc_count += len(chunks)
         return len(chunks)
 
     def ingest_uploaded_file(self, uploaded_file: Any) -> int:
@@ -119,10 +116,10 @@ class CulinaryRAG:
         return self.vectorstore.as_retriever(search_kwargs={"k": k})
 
     def _count_documents(self) -> int:
-        return self.vectorstore._collection.count()  # type: ignore[attr-defined]
+        return self.doc_count
 
     def is_ready(self) -> bool:
-        return self._count_documents() > 0
+        return self.doc_count > 0
 
     def query(self, question: str, k: int = 4) -> Dict[str, Any]:
         if not question.strip():

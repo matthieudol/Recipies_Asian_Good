@@ -16,7 +16,7 @@ User ── Streamlit UI (app.py)
         LangChain RAG Pipeline (src/rag_pipeline.py)
           ├─ PyPDFLoader + RecursiveCharacterTextSplitter
           ├─ HuggingFace MiniLM embeddings
-          ├─ Chroma (persist_directory=vectorstore/)
+          ├─ Vector store en mémoire (InMemoryVectorStore)
           └─ LLM Mistral via Ollama (mode local) ou HuggingFace API (mode cloud)
 ```
 
@@ -42,23 +42,20 @@ source .venv/bin/activate          # Windows : .venv\Scripts\activate
 pip install -r requirements.txt
 ollama pull mistral
 
-# Indexer le PDF fourni
-python -m src.rag_pipeline         # enregistre les embeddings dans vectorstore/
-
 # Lancer l’interface
 streamlit run app.py
 ```
 
 > L’application est disponible sur `http://localhost:8501`.  
-> Les dossiers `data/recipes/` et `vectorstore/` sont créés automatiquement.
+> Les dossiers `data/recipes/` et `vectorstore/` sont créés automatiquement (mais la base reste en mémoire).
 
 ---
 
 ## 3. Utilisation
 
 1. **Indexer un PDF**  
-   - via le terminal (`python -m src.rag_pipeline`)  
-   - ou via la sidebar Streamlit (Upload + bouton “Indexer ce PDF”).
+   - via la sidebar Streamlit (Upload + bouton “Indexer ce PDF”).  
+   - L’index reste en mémoire tant que l’application tourne (re-indexer après chaque redémarrage).
 
 2. **Poser une question**  
    - ex. “Je veux des nouilles sautées version végétarienne pour 6 personnes”.
@@ -112,7 +109,7 @@ Voir `DEPLOYMENT.md` pour le pas-à-pas détaillé (captures d’écran, gestion
 | Exigence (guidelines.pdf) | Réalisation |
 |---------------------------|-------------|
 | Pipeline RAG documenté | README + architecture décrite ci-dessus |
-| Données persistées localement | `vectorstore/` (Chroma) + `data/recipes/` |
+| Indexation disponible | InMemoryVectorStore (pas de persistance disque, upload rapide) |
 | UI Streamlit ergonomique | Sidebar upload, zone de saisie, affichage des sources |
 | Adaptations culinaires intelligentes | Prompt Michelin avec sorties “Recette directe / Adaptation possible” |
 | Gestion des sources | chaque chunk conserve `metadata["source"]` |
@@ -130,7 +127,7 @@ Voir `DEPLOYMENT.md` pour le pas-à-pas détaillé (captures d’écran, gestion
 
 2. **Indexation**  
    - Embeddings via `HuggingFaceEmbeddings` (MiniLM)  
-   - Stockage dans `Chroma` (persist_directory = `vectorstore/`).
+   - Stockage dans un `InMemoryVectorStore` (données gardées en mémoire vive).
 
 3. **Retrieval + Génération**  
    - `vectorstore.as_retriever(k=5)`  
@@ -168,8 +165,7 @@ RAG_Recipes/
     ├── src/
     │   ├── rag_pipeline.py     # pipeline principal (Ollama + HuggingFace fallback)
     │   └── utils.py            # prompts, helpers
-    ├── data/recipes/           # fichiers uploadés
-    └── vectorstore/            # base Chroma persistée
+    └── data/recipes/           # fichiers uploadés
 ```
 
 ---
